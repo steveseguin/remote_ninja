@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="./thirdparty/obs-websocket.min.js"></script>
+ 
+	<link rel="stylesheet" href="./main.css" />
+	<style>
+	
+		.container {
+			max-width: 80%;
+			width: fit-content;
+			margin: 0 auto;
+		}
+
+		h1 {
+			margin-top: 1em;
+			margin-bottom: 1em;
+			padding: 10px;
+		}
+
+		.card {
+			margin: 10px;
+			box-shadow: 0 4px 8px 0 rgb(0 0 0 / 10%);
+			background-color: #ddd;
+			color: black;
+			margin-bottom: 1.5em;
+		}
+
+		.card>div {
+			padding: 10px;
+		}
+
+		.card h2 {
+			font-size: 1.5em;
+			padding: 10px;
+			background-color: #457b9d;
+			color: white;
+			border-bottom: 2px solid #3b6a87;
+		}
+
+		small {
+			font-style: italic;
+			display: block;
+			margin-left: 1em;
+		}
+
+		span.warning {
+			color: rgb(212, 191, 0);
+		}
+
+		input {
+			padding: 10px;
+			display: inline-block;
+			flex-flow: unset;
+			margin: 10px;
+		}
+
+		video {
+			max-width: 640px;
+			max-height: 360px;
+			padding: 20px;
+		}
+
+		audio {
+			max-width: 640px;
+			max-height: 360px;
+			padding: 20px;
+		}
+
+		div#processing {
+			display: none;
+			justify-content: center;
+			place-items: center;
+			position: absolute;
+			inset: 0;
+			font-size: 1.5em;
+			font-weight: bold;
+			background: #141926;
+			flex-direction: column;
+		}
+		button {
+			margin:5px;
+			border:solid black 2px;
+		}
+		
+		body {
+			color:white;
+			display: inline-block;
+			flex-flow: unset;
+		}
+		
+		a {
+			color: #225273!important;
+		}
+		
+		
+		
+	</style>
+	<title>OBS Controller Demo using VDO.NInja</title>
+</head>
+
+<div class="container">
+	<h1>OBS remote (client)</h1>
+	<div id="info">
+		<div class="card">
+			<h2>Scenes</h2>
+			<div id="scene_list">
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id='commands'>
+
+</div>
+<script>
+
+	(function(w) {
+	w.URLSearchParams = w.URLSearchParams || function(searchString) {
+		var self = this;
+		searchString = searchString.replace("??", "?");
+		self.searchString = searchString;
+		self.get = function(name) {
+			var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(self.searchString);
+			if (results == null) {
+				return null;
+			} else {
+				return decodeURI(results[1]) || 0;
+			}
+		};
+	};
+
+	})(window);
+
+	var urlEdited = window.location.search.replace(/\?\?/g, "?");
+	urlEdited = urlEdited.replace(/\?/g, "&");
+	urlEdited = urlEdited.replace(/\&/, "?");
+
+	if (urlEdited !== window.location.search){
+		warnlog(window.location.search + " changed to " + urlEdited);
+		window.history.pushState({path: urlEdited.toString()}, '', urlEdited.toString());
+	}
+	var urlParams = new URLSearchParams(urlEdited);
+
+	if (urlParams.get("password")){
+		var password = urlParams.get("password");
+		localStorage.setItem('password',password)
+	} else if (localStorage.getItem('password')){
+		password = localStorage.getItem('password');
+	}
+	if (urlParams.get("room")){
+		var roomname = urlParams.get("room")
+		localStorage.setItem('roomname',roomname)
+	} else if (localStorage.getItem('roomname')){
+		roomname = localStorage.getItem('roomname');
+	}
+
+	const obs = new OBSWebSocket();
+	var scenesData = {};
+	scenesData.scenes = [];
+	
+	function sendToOBS(action, data){
+		var msg = {};
+		msg.sendToOBS = {};
+		msg.sendToOBS.action = action;
+		msg.sendToOBS.data = data;
+		iframe.contentWindow.postMessage({"sendData":msg}, '*');
+	}
+
+	
+
+	var iframe = document.createElement("iframe");
+	iframe.src = "./?room="+roomname+"&password="+password+"&push&autostart&vd=0&ad=0&cleanoutput&label=CLIENT_"+Math.floor(Math.random() * 1000000);
+	iframe.style.opacity = 0;
+	iframe.style.width = 0;
+	iframe.style.height = 0;
+	iframe.style.position = "absolulte";
+	iframe.style.top = "-100px";
+	iframe.style.left = "-100px";
+	document.body.appendChild(iframe)
+
+	var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+	var eventer = window[eventMethod];
+	var messageEvent = eventMethod === "attachEvent" ? "onmessage" : "message";
+	eventer(messageEvent, function (e) {
+		if (e.source != iframe.contentWindow){return} // reject messages send from other iframes
+		console.log(e);
+		if ("dataReceived" in e.data){ 
+			if ("sentFromOBS" in e.data.dataReceived){
+				processIncoming(e.data.dataReceived.sentFromOBS);
+			}
+		}
+	});
+
+	function changeScene(scene){
+		sendToOBS('SetCurrentScene', {
+			'scene-name': scene
+		});
+	}
+	
+	function processIncoming(data){
+		if ("scenesData" in data){
+			scenesData = data.scenesData;
+			updateSceneList();
+		}
+	}
+
+	function updateSceneList(){
+		console.log(scenesData);
+		var scenes = scenesData.scenes;
+		document.getElementById("scene_list").innerHTML = "";
+		scenes.forEach(scene => {
+			var button = document.createElement("button");
+				button.innerText = scene.name;
+				button.onclick = function(){
+					changeScene(this.innerText);
+				};  // "speaker" also works in the same way.
+				document.getElementById("scene_list").appendChild(button);
+			
+			if (scene.name === scenesData.currentScene) {
+				button.classList.add("pressed");
+			}
+		});
+	}
+	
+		
+    </script>
+  </body>
+</html>
