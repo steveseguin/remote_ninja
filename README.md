@@ -21,7 +21,7 @@ The provided link is the remote control interface: it works across firewalls, by
 
 Currently, the interface is setup to list available scenes, the active scene, and lets you remotely change between scenes.  It can be easily modified to do anything the websocket API of OBS allows.
 
-### Make your own version of this app or similar apps using VDO.Ninja's p2p data-tunneling 
+#### Make your own version of this app or similar apps using VDO.Ninja's p2p data-tunneling 
 
 If interested in sending other types of data messages across VDO.Ninja, the VDO.Ninja IFRAME API is pretty simple yet powerful:
 
