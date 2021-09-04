@@ -3,7 +3,7 @@
   <head>
     <script type="text/javascript" src="./thirdparty/obs-websocket.min.js"></script>
  
-	<link rel="stylesheet" href="https://vdo.ninja/beta/main.css" />
+	<link rel="stylesheet" href="./main.css" />
 	<style>
 	
 		.container {
@@ -93,6 +93,22 @@
 			color: #225273!important;
 		}
 		
+		.hidden{
+			display:none !important;
+		}
+		
+		.stat {
+			background-color: black;
+			margin: 7px;
+			padding: 5px;
+		}
+		.stat:nth-child(2n) {
+			background-color: #333;
+		}
+		.stat:empty {
+			display:none;
+		}
+		
 		
 		
 	</style>
@@ -107,13 +123,93 @@
 			<div id="scene_list">
 			</div>
 		</div>
+		<div class="card hidden">
+			<h2>General</h2>
+			<div>
+				<button onclick="basicCommand(this);" data-command="GetVersion">GetVersion</button>
+				<button onclick="basicCommand(this);" data-command="GetStats">GetStats</button>
+				<button onclick="basicCommand(this);" data-command="GetVideoInfo">GetVideoInfo</button>
+			</div>
+		</div>
+		<div class="card">
+			<h2>Output</h2>
+			<div id="outputs">
+				<button onclick="basicCommand(this);" data-command="ListOutputs">ListOutputs</button>
+			</div>
+		</div>
+		<div class="card">
+			<h2>Active Sources</h2>
+			<div id="active_source_list">
+			</div>
+		</div>
+		<div class="card">
+			<h2>All Sources</h2>
+			<div id="source_list">
+			</div>
+		</div>
+		<div class="card hidden">
+			<h2>Source debug</h2>
+			<div>
+				<button onclick="basicCommand(this);" data-command="GetMediaSourcesList">GetMediaSourcesList</button>
+				<button onclick="basicCommand(this);" data-command="GetSourcesList">GetSourcesList</button>
+				<button onclick="basicCommand(this);" data-command="GetSourceActive">GetSourceActive</button>
+				<button onclick="basicCommand(this);" data-command="GetAudioActive">GetAudioActive</button>
+			</div>
+		</div>
+		<div id="audio" class="card hidden">
+			<h2>Audio</h2>
+			<div>
+				<button class="hidden"  onclick="basicCommand(this, {source:selectedSource});" data-command="GetVolume">GetVolume</button>
+				<input type='range' min="0" max="100" value="100" onchange="basicCommand(this, {source:selectedSource, volume:parseInt(this.value)/100});" data-command="SetVolume" />
+				<button class="hidden" onclick="basicCommand(this, {source:selectedSource});" data-command="ToggleMute">ToggleMute</button>
+			</div>
+		</div>
+		<div class="card" id='commands'>
+			<h2>Custom Commands</h2>
+			<input id="newCommand"  placeholder="enter a custom command" type='text' /><button id="goCreate" onclick="createCommand()">Create</button>
+			<br />
+			A list of possible commands <a href="https://github.com/Palakis/obs-websocket/blob/4.x-current/docs/generated/protocol.md#requests">available here:</a><br />
+		</div>
 	</div>
-</div>
-
-<div id='commands'>
-
+	<div  style="width:100%;display:block;margin:0;padding:0;">
+		<div id='OBSstats' style="width:49%;display:inline-block;vertical-align: top;">
+			<div id="stat-current-profile" class='stat'></div>
+			<div id="stat-current-scene" class='stat'></div>
+			<div id="stat-streaming" class='stat'></div>
+			<div id="stat-memory-usage" class='stat'></div>
+			<div id="stat-recording" class='stat'></div>
+			<div id="stat-recording-paused" class='stat'></div>
+			<div id="stat-average-frame-time" class='stat'></div>
+			<div id="stat-cpu-usage" class='stat'></div>
+			<div id="stat-fps" class='stat'></div>
+			<div id="stat-free-disk-space" class='stat'></div>
+		</div>
+		<div id='OBSsettings'  style="width:49%;display:inline-block;vertical-align: top;">
+			<div id="setting-baseHeight" class='stat'></div>
+			<div id="setting-baseWidth" class='stat'></div>
+			<div id="setting-outputHeight" class='stat'></div>
+			<div id="setting-outputWidth" class='stat'></div>
+			<div id="setting-scaleType" class='stat'></div>
+			<div id="setting-fps" class='stat'></div>
+		</div>
+	</div>
+	
 </div>
 <script>
+
+	function basicCommand(ele, data={}){
+		sendToOBS(ele.dataset.command, data);
+	}
+
+	function createCommand(){
+		var command = document.getElementById("newCommand").value;
+		document.getElementById("newCommand").value = "";
+		var button = document.createElement("button");
+		button.innerText = command;
+		button.dataset.command = command;
+		button.onclick = function(){basicCommand(this);};
+		document.getElementById("commands").appendChild(button);
+	}
 
 	(function(w) {
 	w.URLSearchParams = w.URLSearchParams || function(searchString) {
@@ -157,6 +253,7 @@
 
 	const obs = new OBSWebSocket();
 	var scenesData = {};
+	var selectedSource = null;
 	scenesData.scenes = [];
 	
 	function sendToOBS(action, data){
@@ -167,16 +264,14 @@
 		iframe.contentWindow.postMessage({"sendData":msg}, '*');
 	}
 
-	
-
 	var iframe = document.createElement("iframe");
-	iframe.src = "https://vdo.ninja/beta/?room="+roomname+"&password="+password+"&push&autostart&vd=0&ad=0&cleanoutput&label=CLIENT_"+Math.floor(Math.random() * 1000000);
-	iframe.style.opacity = 0;
-	iframe.style.width = 0;
-	iframe.style.height = 0;
-	iframe.style.position = "absolulte";
-	iframe.style.top = "-100px";
-	iframe.style.left = "-100px";
+	iframe.src = "./?room="+roomname+"&password="+password+"&push&novideo=mainOBSOutput&noaudio=mainOBSOutput&autostart&vd=0&ad=0&transparent&cleanoutput&label=CLIENT_"+Math.floor(Math.random() * 1000000);
+//	iframe.style.opacity = 0;
+	iframe.style.width = "160px";
+	iframe.style.height = "90px";
+	iframe.style.position = "fixed";
+	iframe.style.top = "10px";
+	iframe.style.right = "170px";
 	document.body.appendChild(iframe)
 
 	var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
@@ -184,7 +279,6 @@
 	var messageEvent = eventMethod === "attachEvent" ? "onmessage" : "message";
 	eventer(messageEvent, function (e) {
 		if (e.source != iframe.contentWindow){return} // reject messages send from other iframes
-		console.log(e);
 		if ("dataReceived" in e.data){ 
 			if ("sentFromOBS" in e.data.dataReceived){
 				processIncoming(e.data.dataReceived.sentFromOBS);
@@ -199,23 +293,186 @@
 	}
 	
 	function processIncoming(data){
-		if ("scenesData" in data){
-			scenesData = data.scenesData;
+		if ("scenes" in data){
+			scenesData = data.scenes;
 			updateSceneList();
 		}
+		if ("callbackData" in data){
+			console.log(data.callbackData);
+		} else if ("callbackError" in data){
+			console.log(data.callbackError);
+		}
+		if ("rawData" in data){
+			var data = JSON.parse(data.rawData);
+			console.log(data);
+			if (("update-type" in data) && (data["update-type"]="Heartbeat")){
+				for (var i in data){
+					if (i === "stats"){
+						for (var j in data[i]){
+							if (document.getElementById("stat-"+j)){
+							
+								if (typeof data[i][j] == "number"){
+									data[i][j] = parseInt(data[i][j]*100)/100.0;
+								}
+								if (data[i][j]===true){
+									document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#CFC'>" + data[i][j]+"</font>";
+								} else if (data[i][j] === false){
+									document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#FCC'>" + data[i][j]+"</font>";
+								} else {
+									document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#DDD'>" + data[i][j]+"</font>";
+								}
+							}
+						}
+					} else if (document.getElementById("stat-"+i)){
+						if (data[i]===true){
+							document.getElementById("stat-"+i).innerHTML = i+ " : <font color='#CFC'>" + data[i]+"</font>";
+						} else if (data[i] === false){
+							document.getElementById("stat-"+i).innerHTML = i+ " : <font color='#FCC'>" + data[i]+"</font>";
+						} else {
+							document.getElementById("stat-"+i).innerHTML = i+ " : <font color='#DDD'>" + data[i]+"</font>";
+						}
+					}
+				}
+			} else if ("baseHeight" in data){
+				for (var i in data){
+					if (document.getElementById("setting-"+i)){
+						if (data[i]===true){
+							document.getElementById("setting-"+i).innerHTML = i+ " : <font color='#CFC'>" + data[i]+"</font>";
+						} else if (data[i] === false){
+							document.getElementById("setting-"+i).innerHTML = i+ " : <font color='#FCC'>" + data[i]+"</font>";
+						} else {
+							document.getElementById("setting-"+i).innerHTML = i+ " : <font color='#DDD'>" + data[i]+"</font>";
+						}
+					}
+				}
+			} else if ("sources" in data){
+				if ("name" in data){
+					document.getElementById("active_source_list").innerHTML = "";
+					for (var i =0;i<data.sources.length;i++){
+						var button = document.createElement("button");
+						button.innerText = data.sources[i].name;
+						button.dataset.name = data.sources[i].name;
+						button.dataset.type = "source"
+						button.onclick = function(){
+							console.log("CLICKED: " + this.innerText);
+							selectedSource = this.dataset.name;
+							document.getElementById("audio").classList.add("hidden");
+							var sources = document.querySelectorAll("[data-name");
+							for (var k = 0 ; k<sources.length; k++){
+								sources[k].classList.remove("pressed");
+							}
+							var sources = document.querySelectorAll("[data-name='"+selectedSource+"']");
+							console.log(sources);
+							for (var k = 0 ; k<sources.length; k++){
+								document.getElementById("audio").classList.remove("hidden");
+								sources[k].classList.add("pressed");
+							}
+						};
+						document.getElementById("active_source_list").appendChild(button);
+					}
+					if (selectedSource){
+						var sources = document.querySelectorAll("[data-name");
+						document.getElementById("audio").classList.add("hidden");
+						for (var k = 0 ; k<sources.length; k++){
+							sources[k].classList.remove("pressed");
+						}
+						var sources = document.querySelectorAll("[data-name='"+selectedSource+"']");
+						console.log(sources);
+						for (var k = 0 ; k<sources.length; k++){
+							sources[k].classList.add("pressed");
+							document.getElementById("audio").classList.remove("hidden");
+						}
+					} else {
+						document.getElementById("audio").classList.add("hidden");
+					}
+				} else {
+					document.getElementById("source_list").innerHTML = "";
+					for (var i =0;i<data.sources.length;i++){
+						var button = document.createElement("button");
+						button.innerText = data.sources[i].name;
+						button.dataset.name = data.sources[i].name;
+						button.dataset.type = "source"
+						button.onclick = function(){
+							console.log("CLICKED: " + this.innerText);
+							selectedSource = this.dataset.name;
+							document.getElementById("audio").classList.add("hidden");
+							var sources = document.querySelectorAll("[data-name");
+							for (var k = 0 ; k<sources.length; k++){
+								sources[k].classList.remove("pressed");
+							}
+							var sources = document.querySelectorAll("[data-name='"+selectedSource+"']");
+							console.log(sources);
+							for (var k = 0 ; k<sources.length; k++){
+								sources[k].classList.add("pressed");
+								document.getElementById("audio").classList.remove("hidden");
+							}
+						};
+						document.getElementById("source_list").appendChild(button);
+					}
+					if (selectedSource){
+						var sources = document.querySelectorAll("[data-name");
+						document.getElementById("audio").classList.add("hidden");
+						for (var k = 0 ; k<sources.length; k++){
+							sources[k].classList.remove("pressed");
+						}
+						var sources = document.querySelectorAll("[data-name='"+selectedSource+"']");
+						console.log(sources);
+						for (var k = 0 ; k<sources.length; k++){
+							sources[k].classList.add("pressed");
+							document.getElementById("audio").classList.remove("hidden");
+						}
+					} else {
+						document.getElementById("audio").classList.add("hidden");
+					}
+				}
+				
+				<!-- congestion: 0 -->
+				<!-- droppedFrames: 0 -->
+				<!-- flags: {audio: true, encoded: true, multiTrack: true, rawValue: 31, service: true, …} -->
+				<!-- height: 1080 -->
+				<!-- name: "simple_stream" -->
+				<!-- reconnecting: false -->
+				<!-- settings: {bind_ip: 'default', dyn_bitrate: false, low_latency_mode_enabled: false, new_socket_loop_enabled: false} -->
+				<!-- totalBytes: 351121 -->
+				<!-- totalFrames: 30 -->
+				<!-- type: "rtmp_output" -->
+				<!-- width: 1920 -->
+				
+			} else if ("outputs" in data){
+				document.getElementById("outputs").innerHTML = "";
+				for (var i =0;i<data.outputs.length;i++){
+					var button = document.createElement("button");
+					button.innerText = data.outputs[i].name;
+					button.dataset.output = data.outputs[i].name;
+					button.onclick = function(){
+						console.log("CLICKED: " + this.innerText);
+						var outputName = this.dataset.output;
+						if (this.classList.contains("pressed")){
+							this.classList.remove("pressed");
+							sendToOBS("StopOutput",{outputName:outputName});
+						} else {
+							this.classList.add("pressed");
+							sendToOBS("StartOutput",{outputName:outputName});
+						}
+					};
+					document.getElementById("outputs").appendChild(button);
+				}
+			}
+			
+		} 
 	}
 
 	function updateSceneList(){
-		console.log(scenesData);
 		var scenes = scenesData.scenes;
 		document.getElementById("scene_list").innerHTML = "";
 		scenes.forEach(scene => {
 			var button = document.createElement("button");
-				button.innerText = scene.name;
-				button.onclick = function(){
-					changeScene(this.innerText);
-				};  // "speaker" also works in the same way.
-				document.getElementById("scene_list").appendChild(button);
+			button.innerText = scene.name;
+			button.onclick = function(){
+				console.log("CLICKED");
+				changeScene(this.innerText);
+			};  // "speaker" also works in the same way.
+			document.getElementById("scene_list").appendChild(button);
 			
 			if (scene.name === scenesData.currentScene) {
 				button.classList.add("pressed");
