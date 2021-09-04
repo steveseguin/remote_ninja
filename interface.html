@@ -304,31 +304,20 @@
 		if ("rawData" in data){
 			var data = JSON.parse(data.rawData);
 			console.log(data);
-			if (("update-type" in data) && (data["update-type"]="Heartbeat")){
-				for (var i in data){
-					if (i === "stats"){
-						for (var j in data[i]){
-							if (document.getElementById("stat-"+j)){
-							
-								if (typeof data[i][j] == "number"){
-									data[i][j] = parseInt(data[i][j]*100)/100.0;
-								}
-								if (data[i][j]===true){
-									document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#CFC'>" + data[i][j]+"</font>";
-								} else if (data[i][j] === false){
-									document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#FCC'>" + data[i][j]+"</font>";
-								} else {
-									document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#DDD'>" + data[i][j]+"</font>";
-								}
-							}
+			if ("stats" in data){
+				var i = "stats";
+				for (var j in data[i]){
+					if (document.getElementById("stat-"+j)){
+					
+						if (typeof data[i][j] == "number"){
+							data[i][j] = parseInt(data[i][j]*100)/100.0;
 						}
-					} else if (document.getElementById("stat-"+i)){
-						if (data[i]===true){
-							document.getElementById("stat-"+i).innerHTML = i+ " : <font color='#CFC'>" + data[i]+"</font>";
-						} else if (data[i] === false){
-							document.getElementById("stat-"+i).innerHTML = i+ " : <font color='#FCC'>" + data[i]+"</font>";
+						if (data[i][j]===true){
+							document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#CFC'>" + data[i][j]+"</font>";
+						} else if (data[i][j] === false){
+							document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#FCC'>" + data[i][j]+"</font>";
 						} else {
-							document.getElementById("stat-"+i).innerHTML = i+ " : <font color='#DDD'>" + data[i]+"</font>";
+							document.getElementById("stat-"+j).innerHTML = j+ " : <font color='#DDD'>" + data[i][j]+"</font>";
 						}
 					}
 				}

@@ -131,7 +131,6 @@
 	<script>
 
 		var hostname = "vdo.ninja"; // all that's supported as of this moment. 
-		console.error("TODO: Change hostname");
 
 		const obs = new OBSWebSocket();
 		var scenesData = {};
@@ -267,6 +266,10 @@
 				iframe.contentWindow.postMessage({"sendData":msg}, '*');
 			} catch(e){}
 		}
+		
+		function heartBeat(){
+			obs.send("GetStats");
+		}
 
 		function updateSceneList(){
 			var msg = {};
@@ -289,6 +292,8 @@
 		document.getElementById('address_button_2').addEventListener('click', e => {
 			connect(e, true);
 		});
+		
+		var heartBeatInterval = null;
 		
 		function connect(e, camera){
 			const address = document.getElementById('address').value || "localhost:4444";
@@ -330,8 +335,9 @@
 				document.getElementById("client").innerHTML = "<b><font style='color:#70c4ff;'>client link:</font></b> "+clientLink;
 				document.getElementById("info").innerHTML = "<br /><p style='color:#bdffbd;'>Connection to OBS websockets opened.</p>" + document.getElementById("info").innerHTML;
 				try {
-					obs._socket.onmessage2 = obs._socket.onmessage;
+					obs._socket.onmessage2 = obs._socket.onmessage; // hijacking the obs-websocket.js framework
 					obs._socket.onmessage = function(data){
+					console.log(data);
 						obs._socket.onmessage2(data);
 						if (data.type && data.data){
 							if (data.type == "message"){
@@ -341,9 +347,12 @@
 					}
 				} catch(e){console.error(e);}
 				
+				clearInterval(heartBeatInterval);
+				heartBeatInterval = setInterval(function(){heartBeat();},3000);
+				
 			}).catch(err => { // Promise convention dicates you have a catch on every chain.
 				console.log(err);
-				document.getElementById("info").innerHTML = "<br />Error trying to connect." + document.getElementById("info").innerHTML;
+				document.getElementById("info").innerHTML = "<br />Error trying to connect. Is SSL enabled on your domain?" + document.getElementById("info").innerHTML;
 				if ("error" in err){
 					document.getElementById("info").innerHTML = "<br />"+err.error + document.getElementById("info").innerHTML;
 				}
