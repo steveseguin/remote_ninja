@@ -281,6 +281,11 @@
 			obs.send("GetVideoInfo");
 			obs.send("ListOutputs");
 		}
+		
+		function getPath() {
+		  var folder = (window.location.pathname.split('/')[0] || '').toLowerCase() == 'testsite' ? '/testsite' : '';
+		  return window.location.hostname + folder;
+		}
 
 		document.getElementById('address_button').addEventListener('click', e => {
 			connect(e, false);
@@ -322,7 +327,7 @@
 				document.getElementById("setup").style.display = "none";
 				scenesData = data;
 				updateSceneList();
-				var clientLink = window.location.hostname+"/interface.html?room="+roomname+"&password="+pwurl;
+				var clientLink = getPath()+"/interface.html?room="+roomname+"&password="+pwurl;
 				document.getElementById("client").href = clientLink;
 				document.getElementById("client").innerHTML = "<b><font style='color:#70c4ff;'>client link:</font></b> "+clientLink;
 				document.getElementById("info").innerHTML = "<br /><p style='color:#bdffbd;'>Connection to OBS websockets opened.</p>" + document.getElementById("info").innerHTML;
