@@ -139,7 +139,7 @@
 
 		function sendToOBS(action, data={}){
 			document.getElementById("info").innerHTML = action + "<br />"+document.getElementById("info").innerHTML;
-			obs.sendCallback(action, data, sendCallback)
+			obs.send(action, data).then(sendCallback, console.error);
 		}
 		
 		(function(w) {
@@ -248,7 +248,7 @@
 			});
 		}
 		
-		function sendCallback(err, data){
+		function sendCallback(data, err=null){
 			console.log("CALLBACK TRIGGERED");
 			var msg = {};
 			msg.sentFromOBS = {};
@@ -258,6 +258,7 @@
 				iframe.contentWindow.postMessage({"sendData":msg}, '*');
 			} catch(e){}
 		}
+		
 		
 		function sendRawData(data){
 			var msg = {};
@@ -269,7 +270,7 @@
 		}
 		
 		function heartBeat(){
-			obs.send("GetStats");
+			obs.call("GetStats");
 		}
 
 		function updateSceneList(){
@@ -280,10 +281,10 @@
 				iframe.contentWindow.postMessage({"sendData":msg}, '*');
 			} catch(e){}
 			console.log(msg);
-			obs.send("GetSourcesList");
-			obs.send('GetCurrentScene');
-			obs.send("GetVideoInfo");
-			obs.send("ListOutputs");
+			obs.call("GetSourcesList");
+			obs.call('GetCurrentScene');
+			obs.call("GetVideoInfo");
+			obs.call("ListOutputs");
 		}
 
 		document.getElementById('address_button').addEventListener('click', e => {
@@ -311,19 +312,14 @@
 			localStorage.setItem('address',address);
 			if (password){
 				localStorage.setItem('wspass',password);
-				var ret = obs.connect({
-				  address: address,
-				  password: password
-				});
+				var ret = obs.connect("wss://"+address,password);
 			} else {
-				var ret = obs.connect({
-				  address: address
-				});
+				var ret = obs.connect("wss://"+address);
 			}
 			
 			ret.then(() => {
 				console.log(`Success!`);
-				return obs.send('GetSceneList');
+				return obs.call('GetSceneList');
 			}).then(data => {
 				document.getElementById("setup").style.display = "none";
 				scenesData = data;
