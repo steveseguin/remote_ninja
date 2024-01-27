@@ -1,7 +1,9 @@
 
-Currently being re-developed to support v5 of OBS websockets.  It will not work until updated.
+This code needs to be re-developed to support v5 of OBS websockets, as OBS no longer uses v4.
 
-For now you can use: https://docs.vdo.ninja/advanced-settings/upcoming-parameters/and-controlobs with VDO.Ninja to change scenes and start/stop the stream remotely. This doesn't require websockets.
+This project has been replaced with https://vdo.ninja/examples/obsremote instead.
+
+You can also check out the built-into VDO.Ninja OBS remote option, https://docs.vdo.ninja/advanced-settings/upcoming-parameters/and-controlobs, which lets VDO.Ninja change scenes and start/stop the stream remotely. This doesn't require websockets.
 
 # Remote Ninja
 Remote control for OBS using a dash of the VDO.Ninja special sauce
